@@ -59,5 +59,14 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
   }
 
   console.log(`disbord: ${parsed.name} を生成しました`);
-  console.log(`次のコマンドで開発を始められます:\n  cd ${parsed.name}\n  bun install\n  bun run dev`);
+
+  const install = Bun.spawn(['bun', 'install'], { cwd: targetDir, stdio: ['inherit', 'inherit', 'inherit'] });
+  const exitCode = await install.exited;
+  if (exitCode !== 0) {
+    console.error(
+      `disbord: bun install に失敗しました（終了コード ${exitCode}）。${parsed.name} 配下で手動実行してください`,
+    );
+  }
+
+  console.log(`次のコマンドで開発を始められます:\n  cd ${parsed.name}\n  bun run dev`);
 }

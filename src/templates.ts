@@ -2,7 +2,7 @@
  * 生成するbotが依存する`disbord`のバージョン範囲。
  * disbordを新しいバージョンで公開したら、このバージョン範囲も手動で追従させる。
  */
-const DISBORD_VERSION_RANGE = '^0.0.1';
+const DISBORD_VERSION_RANGE = '^0.0.2';
 
 /**
  * db有効時は`@libsql/client`(と`drizzle-orm`)をbot自身の依存にも明示する。
@@ -24,6 +24,11 @@ export function generatePackageJson(name: string, options: { db: boolean }): str
         type: 'module',
         scripts: {
           dev: 'disbord dev',
+          build: 'disbord build',
+          fmt: 'oxfmt --write src test',
+          lint: 'oxlint -c oxlint.config.ts --fix',
+          generate: 'disbord generate event',
+          env: 'disbord env',
         },
         dependencies: {
           disbord: DISBORD_VERSION_RANGE,
@@ -35,7 +40,7 @@ export function generatePackageJson(name: string, options: { db: boolean }): str
           // @typescript/native-preview(tsgoコマンド)は不要(実機確認済み)。
           typescript: '^7.0.2',
           oxlint: 'latest',
-          oxfmt: '^0.42.0',
+          oxfmt: '^0.61.0',
         },
       },
       null,
@@ -51,7 +56,12 @@ export type DisbordConfigOptions = { db: boolean; coreClass: boolean };
  * nullMessage/botErrorMessageはプレースホルダーで、ユーザーが後から編集する想定。
  */
 export function generateDisbordConfig(options: DisbordConfigOptions): string {
-  const lines = ["import type { Config } from 'disbord';", '', 'export default {', "  intents: ['Guilds', 'GuildMessages'],"];
+  const lines = [
+    "import type { Config } from 'disbord';",
+    '',
+    'export default {',
+    "  intents: ['Guilds', 'GuildMessages'],",
+  ];
 
   if (options.coreClass) {
     lines.push('  coreClass: {', '    enable: true,', "    nullMessage: 'まだ始まっていません',", '  },');
@@ -92,20 +102,14 @@ export function generateOxfmtrc(): string {
 }
 
 /**
- * 相対import(./や../)を禁止し@/絶対パスimportを必須にする(ユーザー指示)。
- * この制限はdisbord/lint側の共有configには入れない(disbord自身は@/エイリアスを持たず
- * 相対importで書かれているため、共有configに入れるとdisbord自身のlintが壊れる)。
- * patternsは"./*"のような1階層のみのglobだと"../../foo"のようなネストを見逃すため"**"を使う。
+ * 相対import禁止(no-restricted-imports)・.disbord/*の除外は disbord/lint 側の共有configに
+ * 含まれているため、生成物はextendsするだけでよい。
  */
 export function generateOxlintConfig(): string {
   return `import { config } from 'disbord/lint';
 
 export default {
   extends: [config],
-  rules: {
-    'no-restricted-imports': ['error', { patterns: ['./**', '../**'] }],
-  },
-  ignorePatterns: ['.disbord/*'],
 };
 `;
 }
@@ -145,9 +149,10 @@ export function generateTsconfig(): string {
 }
 
 export function generateMiseToml(): string {
+  // dotenvxはdisbordのnpm依存(@dotenvx/dotenvx)から解決するため、bot側でmise経由の
+  // dotenvx導入は不要。
   return `[tools]
 bun = "latest"
-dotenvx = "latest"
 `;
 }
 

@@ -21,7 +21,16 @@ describe('generatePackageJson', () => {
     const content = JSON.parse(generatePackageJson('my-bot', { db: false }));
     expect(content.name).toBe('my-bot');
     expect(content.scripts.dev).toBe('disbord dev');
-    expect(content.dependencies.disbord).toBe('^0.0.1');
+    expect(content.dependencies.disbord).toBe('^0.0.2');
+  });
+
+  test('dev以外のnpm scripts(build/fmt/lint/generate/env)も含む', () => {
+    const content = JSON.parse(generatePackageJson('my-bot', { db: false }));
+    expect(content.scripts.build).toBe('disbord build');
+    expect(content.scripts.fmt).toBe('oxfmt --write src test');
+    expect(content.scripts.lint).toBe('oxlint -c oxlint.config.ts --fix');
+    expect(content.scripts.generate).toBe('disbord generate event');
+    expect(content.scripts.env).toBe('disbord env');
   });
 
   test('db無効時は@libsql/client・drizzle-ormを含まない', () => {
@@ -66,17 +75,12 @@ describe('generateDisbordConfig', () => {
 });
 
 describe('generateOxlintConfig', () => {
-  test('相対importを禁止するno-restricted-importsルールを含む', () => {
+  test('disbord/lintをextendsするだけの最小構成(rules/ignorePatternsはdisbord/lint側に集約済み)', () => {
     const source = generateOxlintConfig();
     expect(source).toContain("import { config } from 'disbord/lint';");
     expect(source).toContain('extends: [config]');
-    expect(source).toContain("'no-restricted-imports'");
-    expect(source).toContain("'./**'");
-    expect(source).toContain("'../**'");
-  });
-
-  test('.disbord/*をignorePatternsで除外する(自動生成物なので相対importルールの対象外にする)', () => {
-    expect(generateOxlintConfig()).toContain(`ignorePatterns: ['.disbord/*']`);
+    expect(source).not.toContain('rules');
+    expect(source).not.toContain('ignorePatterns');
   });
 });
 
@@ -148,9 +152,9 @@ describe('その他の静的テンプレート', () => {
     expect(content).toContain('env/.env.keys.*');
   });
 
-  test('generateMiseToml: bunとdotenvxを含む', () => {
+  test('generateMiseToml: bunのみ(dotenvxはdisbordのnpm依存経由で解決するため不要)', () => {
     const content = generateMiseToml();
     expect(content).toContain('bun =');
-    expect(content).toContain('dotenvx =');
+    expect(content).not.toContain('dotenvx');
   });
 });
