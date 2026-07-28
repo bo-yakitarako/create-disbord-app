@@ -19,28 +19,32 @@ describe('generatePackageJson', () => {
   test('name・dev script・disbordのバージョン範囲依存を含む(npm公開後を想定、workspace:*ではない)', () => {
     const content = JSON.parse(generatePackageJson('my-bot', { db: false }));
     expect(content.name).toBe('my-bot');
-    expect(content.scripts.dev).toBe('bun run commands && disbord dev');
+    expect(content.scripts.dev).toBe('disbord dev');
     expect(content.dependencies.disbord).toBe('^0.0.2');
   });
 
-  test('dev以外のnpm scripts(build/fmt/lint/generate/env)も含む', () => {
+  test('dev以外のnpm scripts(build/fmt/lint/gen:event/gen:model/env/help)も含む', () => {
     const content = JSON.parse(generatePackageJson('my-bot', { db: false }));
     expect(content.scripts.build).toBe('disbord build');
     expect(content.scripts.fmt).toBe('oxfmt --write src test');
     expect(content.scripts.lint).toBe('oxlint -c oxlint.config.ts --fix');
-    expect(content.scripts.generate).toBe('disbord generate event');
+    expect(content.scripts['gen:event']).toBe('disbord generate event');
+    expect(content.scripts['gen:model']).toBe('disbord generate model');
     expect(content.scripts.env).toBe('disbord env');
+    expect(content.scripts.help).toBe('disbord help');
   });
 
-  test('db無効時は@libsql/client・drizzle-ormを含まない', () => {
+  test('db無効時は@libsql/client・dayjs・drizzle-ormを含まない', () => {
     const content = JSON.parse(generatePackageJson('my-bot', { db: false }));
     expect(content.dependencies['@libsql/client']).toBeUndefined();
+    expect(content.dependencies.dayjs).toBeUndefined();
     expect(content.dependencies['drizzle-orm']).toBeUndefined();
   });
 
-  test('db有効時は@libsql/client・drizzle-kit・drizzle-ormをbot自身の依存としても含む(ネイティブバインディングがdisbord側だけでは解決できないため)', () => {
+  test('db有効時は@libsql/client・dayjs・drizzle-kit・drizzle-ormをbot自身の依存としても含む(ネイティブバインディングやtimestamp_msカラムの型解決がdisbord側だけでは完結しないため)', () => {
     const content = JSON.parse(generatePackageJson('my-bot', { db: true }));
     expect(content.dependencies['@libsql/client']).toBe('^0.17.2');
+    expect(content.dependencies.dayjs).toBe('^1.11.19');
     expect(content.dependencies['drizzle-kit']).toBe('^0.31.10');
     expect(content.dependencies['drizzle-orm']).toBe('^0.45.1');
   });

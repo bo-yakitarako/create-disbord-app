@@ -5,7 +5,7 @@
 const DISBORD_VERSION_RANGE = '^0.0.2';
 
 /**
- * db有効時は`@libsql/client`・`drizzle-kit`・`drizzle-orm`をbot自身の依存にも明示する。
+ * db有効時は`@libsql/client`・`dayjs`・`drizzle-kit`・`drizzle-orm`をbot自身の依存にも明示する。
  * disbord自身の内部依存として既に入っているが、それだけでは足りない:
  * - `@libsql/client`はプラットフォーム別ネイティブバインディングを持ち、bun buildで
  *   バンドルしきれず`--external`扱いになる(disbord/src/cli/build.ts参照)。dist/main.jsの
@@ -14,6 +14,9 @@ const DISBORD_VERSION_RANGE = '^0.0.2';
  * - `disbord migrate`が`src/db/models/*.ts`を動的importしてschema.ts・migrationファイルを
  *   生成する。この際に内部で使う`drizzle-orm/sqlite-core`・`drizzle-kit/api`をbot自身の
  *   モジュール解決・型チェックのために必要とする
+ * - `mode: 'timestamp_ms'`のカラムはgetter越しに`dayjs`でラップされる(`Model`本体の
+ *   `createdAt`/`updatedAt`も同様)ため、モデル側で`accessor xxx: Dayjs;`と型注釈する際に
+ *   bot自身の型チェックのために`dayjs`の型解決が必要
  */
 export function generatePackageJson(name: string, options: { db: boolean }): string {
   return (
@@ -24,19 +27,29 @@ export function generatePackageJson(name: string, options: { db: boolean }): str
         private: true,
         type: 'module',
         scripts: {
-          dev: 'bun run commands && disbord dev',
+          dev: 'disbord dev',
           build: 'disbord build',
           fmt: 'oxfmt --write src test',
           lint: 'oxlint -c oxlint.config.ts --fix',
           commands: 'disbord commands push',
           'commands:delete': 'disbord commands delete',
-          generate: 'disbord generate event',
+          'gen:event': 'disbord generate event',
+          'gen:model': 'disbord generate model',
           env: 'disbord env',
           ...(options.db ? { migrate: 'disbord migrate' } : {}),
+          help: 'disbord help',
         },
         dependencies: {
           disbord: DISBORD_VERSION_RANGE,
-          ...(options.db ? { '@libsql/client': '^0.17.2', 'drizzle-kit': '^0.31.10', 'drizzle-orm': '^0.45.1' } : {}),
+          'discord.js': '^14.27.0',
+          ...(options.db
+            ? {
+                '@libsql/client': '^0.17.2',
+                dayjs: '^1.11.19',
+                'drizzle-kit': '^0.31.10',
+                'drizzle-orm': '^0.45.1',
+              }
+            : {}),
         },
         devDependencies: {
           '@types/bun': 'latest',
