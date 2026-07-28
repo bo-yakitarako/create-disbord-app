@@ -1,10 +1,10 @@
 {
   "name": "create-disbord-app",
   "version": "0.0.1",
-  "private": true,
   "description": "disbordのbot雛形を生成するCLI（create-disbord-app <name>）",
   "license": "MIT",
   "author": "bo-yakitarako",
+  "repository": "github:bo-yakitarako/create-disbord-app",
   "type": "module",
   "bin": {
     "create-disbord-app": "./src/bin.ts"

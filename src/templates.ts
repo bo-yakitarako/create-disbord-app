@@ -1,4 +1,10 @@
 /**
+ * 生成するbotが依存する`disbord`のバージョン範囲。
+ * disbordを新しいバージョンで公開したら、このバージョン範囲も手動で追従させる。
+ */
+const DISBORD_VERSION_RANGE = '^0.0.1';
+
+/**
  * db有効時は`@libsql/client`(と`drizzle-orm`)をbot自身の依存にも明示する。
  * disbord自身の内部依存として既に入っているが、それだけでは足りない:
  * - `@libsql/client`はプラットフォーム別ネイティブバインディングを持ち、bun buildで
@@ -20,7 +26,7 @@ export function generatePackageJson(name: string, options: { db: boolean }): str
           dev: 'disbord dev',
         },
         dependencies: {
-          disbord: 'workspace:*',
+          disbord: DISBORD_VERSION_RANGE,
           ...(options.db ? { '@libsql/client': '^0.17.2', 'drizzle-orm': '^0.45.1' } : {}),
         },
         devDependencies: {

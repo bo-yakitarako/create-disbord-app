@@ -17,11 +17,11 @@ import {
 } from '../src/templates';
 
 describe('generatePackageJson', () => {
-  test('name・dev script・disbordのworkspace依存を含む', () => {
+  test('name・dev script・disbordのバージョン範囲依存を含む(npm公開後を想定、workspace:*ではない)', () => {
     const content = JSON.parse(generatePackageJson('my-bot', { db: false }));
     expect(content.name).toBe('my-bot');
     expect(content.scripts.dev).toBe('disbord dev');
-    expect(content.dependencies.disbord).toBe('workspace:*');
+    expect(content.dependencies.disbord).toBe('^0.0.1');
   });
 
   test('db無効時は@libsql/client・drizzle-ormを含まない', () => {
