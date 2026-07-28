@@ -1,0 +1,26 @@
+{
+  "name": "create-disbord-app",
+  "version": "0.0.1",
+  "private": true,
+  "description": "disbordのbot雛形を生成するCLI（create-disbord-app <name>）",
+  "license": "MIT",
+  "author": "bo-yakitarako",
+  "type": "module",
+  "bin": {
+    "create-disbord-app": "./src/bin.ts"
+  },
+  "scripts": {
+    "test": "bun test",
+    "lint": "oxlint --fix && oxfmt --write src test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "oxfmt": "^0.42.0",
+    "oxlint": "latest",
+    "typescript": "^7.0.2"
+  },
+  "peerDependencies": {
+    "typescript": "^7"
+  }
+}
