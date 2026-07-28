@@ -5,14 +5,15 @@
 const DISBORD_VERSION_RANGE = '^0.0.2';
 
 /**
- * db有効時は`@libsql/client`(と`drizzle-orm`)をbot自身の依存にも明示する。
+ * db有効時は`@libsql/client`・`drizzle-kit`・`drizzle-orm`をbot自身の依存にも明示する。
  * disbord自身の内部依存として既に入っているが、それだけでは足りない:
  * - `@libsql/client`はプラットフォーム別ネイティブバインディングを持ち、bun buildで
  *   バンドルしきれず`--external`扱いになる(disbord/src/cli/build.ts参照)。dist/main.jsの
  *   実行時、この`require('@libsql/client')`はbot自身のディレクトリツリー基準で解決されるため、
  *   disbord側にしか入っていないとデプロイ先で解決できない(実機で確認済み)
- * - 手書きのsrc/db/schema.tsが`drizzle-orm/sqlite-core`等を直接importする際、
- *   bot自身のモジュール解決・型チェックのために必要
+ * - `disbord migrate`が`src/db/models/*.ts`を動的importしてschema.ts・migrationファイルを
+ *   生成する。この際に内部で使う`drizzle-orm/sqlite-core`・`drizzle-kit/api`をbot自身の
+ *   モジュール解決・型チェックのために必要とする
  */
 export function generatePackageJson(name: string, options: { db: boolean }): string {
   return (
@@ -31,10 +32,11 @@ export function generatePackageJson(name: string, options: { db: boolean }): str
           'commands:delete': 'disbord commands delete',
           generate: 'disbord generate event',
           env: 'disbord env',
+          ...(options.db ? { migrate: 'disbord migrate' } : {}),
         },
         dependencies: {
           disbord: DISBORD_VERSION_RANGE,
-          ...(options.db ? { '@libsql/client': '^0.17.2', 'drizzle-orm': '^0.45.1' } : {}),
+          ...(options.db ? { '@libsql/client': '^0.17.2', 'drizzle-kit': '^0.31.10', 'drizzle-orm': '^0.45.1' } : {}),
         },
         devDependencies: {
           '@types/bun': 'latest',
@@ -214,11 +216,6 @@ declare module 'disbord' {
     slashCommands: typeof slashCommands;${schemaField}
   }
 }
-`;
-}
-
-export function generateSchemaStub(): string {
-  return `export const schema = {};
 `;
 }
 

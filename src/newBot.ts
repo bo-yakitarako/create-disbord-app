@@ -12,7 +12,6 @@ import {
   generateOxlintConfig,
   generatePackageJson,
   generateReadyEvent,
-  generateSchemaStub,
   generateSelectMenusStub,
   generateSlashCommandsStub,
   generateTsconfig,
@@ -54,9 +53,6 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
   write('src/disbord.d.ts', generateDisbordDts({ db }));
   write('env/.env.development', generateEnvPlaceholder());
   write('env/.env.production', generateEnvPlaceholder());
-  if (db) {
-    write('src/db/schema.ts', generateSchemaStub());
-  }
 
   console.log(`disbord: ${parsed.name} を生成しました`);
 

@@ -10,7 +10,6 @@ import {
   generateOxlintConfig,
   generatePackageJson,
   generateReadyEvent,
-  generateSchemaStub,
   generateSelectMenusStub,
   generateSlashCommandsStub,
   generateTsconfig,
@@ -20,7 +19,7 @@ describe('generatePackageJson', () => {
   test('name・dev script・disbordのバージョン範囲依存を含む(npm公開後を想定、workspace:*ではない)', () => {
     const content = JSON.parse(generatePackageJson('my-bot', { db: false }));
     expect(content.name).toBe('my-bot');
-    expect(content.scripts.dev).toBe('disbord dev');
+    expect(content.scripts.dev).toBe('bun run commands && disbord dev');
     expect(content.dependencies.disbord).toBe('^0.0.2');
   });
 
@@ -39,10 +38,18 @@ describe('generatePackageJson', () => {
     expect(content.dependencies['drizzle-orm']).toBeUndefined();
   });
 
-  test('db有効時は@libsql/client・drizzle-ormをbot自身の依存としても含む(ネイティブバインディングがdisbord側だけでは解決できないため)', () => {
+  test('db有効時は@libsql/client・drizzle-kit・drizzle-ormをbot自身の依存としても含む(ネイティブバインディングがdisbord側だけでは解決できないため)', () => {
     const content = JSON.parse(generatePackageJson('my-bot', { db: true }));
     expect(content.dependencies['@libsql/client']).toBe('^0.17.2');
+    expect(content.dependencies['drizzle-kit']).toBe('^0.31.10');
     expect(content.dependencies['drizzle-orm']).toBe('^0.45.1');
+  });
+
+  test('db有効時はmigrateスクリプトを含み、db無効時は含まない', () => {
+    const withDb = JSON.parse(generatePackageJson('my-bot', { db: true }));
+    const withoutDb = JSON.parse(generatePackageJson('my-bot', { db: false }));
+    expect(withDb.scripts.migrate).toBe('disbord migrate');
+    expect(withoutDb.scripts.migrate).toBeUndefined();
   });
 
   test('@typescript/native-previewは含まない(typescript@7系のtscが既にネイティブ実装のため不要。実機確認済み)', () => {
@@ -132,10 +139,6 @@ describe('その他の静的テンプレート', () => {
     expect(generateButtonsStub()).toContain('satisfies ButtonRegistration');
     expect(generateSelectMenusStub()).toContain('satisfies SelectMenuRegistration');
     expect(generateSlashCommandsStub()).toContain('satisfies SlashCommandRegistration');
-  });
-
-  test('generateSchemaStub: schemaという名前でexportする', () => {
-    expect(generateSchemaStub()).toContain('export const schema = {};');
   });
 
   test('generateEnvPlaceholder: TOKEN/CLIENT_IDの空プレースホルダー', () => {
