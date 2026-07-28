@@ -23,10 +23,12 @@ export function generatePackageJson(name: string, options: { db: boolean }): str
         private: true,
         type: 'module',
         scripts: {
-          dev: 'disbord dev',
+          dev: 'bun run commands && disbord dev',
           build: 'disbord build',
           fmt: 'oxfmt --write src test',
           lint: 'oxlint -c oxlint.config.ts --fix',
+          commands: 'disbord commands push',
+          'commands:delete': 'disbord commands delete',
           generate: 'disbord generate event',
           env: 'disbord env',
         },
