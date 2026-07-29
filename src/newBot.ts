@@ -7,6 +7,7 @@ import {
   generateDisbordDts,
   generateEnvPlaceholder,
   generateGitignore,
+  generateLefthookConfig,
   generateMiseToml,
   generateOxfmtrc,
   generateOxlintConfig,
@@ -71,6 +72,7 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
   write('tsconfig.json', generateTsconfig());
   write('mise.toml', generateMiseToml());
   write('.gitignore', generateGitignore());
+  write('lefthook.yml', generateLefthookConfig());
   write('src/events/ready.ts', generateReadyEvent());
   write('src/components/buttons.ts', generateButtonsStub());
   write('src/components/selectMenus.ts', generateSelectMenusStub());
@@ -96,6 +98,16 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
     if (enableExitCode !== 0) {
       throw new Error(`disbord: ${targetArgs[0]}の有効化に失敗しました（終了コード ${enableExitCode}）`);
     }
+  }
+
+  // `bun install`のpostinstall(`lefthook install --reset-hooks-path`)がgitリポジトリを
+  // 要求するため、`git init`は必ずbun installより先に実行する。
+  const gitInit = Bun.spawn(['git', 'init'], { cwd: targetDir, stdio: ['inherit', 'inherit', 'inherit'] });
+  const gitInitExitCode = await gitInit.exited;
+  if (gitInitExitCode !== 0) {
+    console.error(
+      `disbord: git init に失敗しました（終了コード ${gitInitExitCode}）。${parsed.name} 配下で手動実行してください`,
+    );
   }
 
   const install = Bun.spawn(['bun', 'install'], { cwd: targetDir, stdio: ['inherit', 'inherit', 'inherit'] });
