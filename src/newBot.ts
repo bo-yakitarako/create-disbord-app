@@ -75,7 +75,7 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
   write('src/components/buttons.ts', generateButtonsStub());
   write('src/components/selectMenus.ts', generateSelectMenusStub());
   write('src/components/slashCommands.ts', generateSlashCommandsStub());
-  write('src/disbord.d.ts', generateDisbordDts({ db: false, coreClass: false }));
+  write('.disbord/disbord.d.ts', generateDisbordDts({ db: false, coreClass: false }));
   write('env/.env.development', generateEnvPlaceholder());
   write('env/.env.production', generateEnvPlaceholder());
 
