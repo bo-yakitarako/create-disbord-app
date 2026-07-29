@@ -12,6 +12,7 @@ import {
   generateOxfmtrc,
   generateOxlintConfig,
   generatePackageJson,
+  generateReadme,
   generateReadyEvent,
   generateSelectMenusStub,
   generateSlashCommandsStub,
@@ -66,6 +67,7 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
   // `--db`/`--core-class`に依存する生成処理は一切ここでは行わない。base skeletonを
   // 書き出した後、`disbord enable`に丸ごと委譲する(disbord.md「CLI・配布」節参照)。
   write('package.json', generatePackageJson(parsed.name));
+  write('README.md', generateReadme(parsed.name));
   write('disbord.config.ts', generateDisbordConfig());
   write('.oxfmtrc.json', generateOxfmtrc());
   write('oxlint.config.ts', generateOxlintConfig());
