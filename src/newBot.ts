@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { parseNewBotArgs } from './args';
 import {
   generateButtonsStub,
+  generateCoreStub,
   generateDisbordConfig,
   generateDisbordDts,
   generateEnvPlaceholder,
@@ -17,9 +18,41 @@ import {
   generateTsconfig,
 } from './templates';
 
+const DEFAULT_CORE_CLASS_NAME = 'Core';
+const CORE_CLASS_NAME_PATTERN = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+
 function promptYesNo(question: string): boolean {
   const answer = prompt(`${question} (y/N)`);
   return (answer ?? '').trim().toLowerCase().startsWith('y');
+}
+
+function promptCoreClassName(): string {
+  const answer = prompt(`Coreクラスの名前を入力してください(無記入の場合は「${DEFAULT_CORE_CLASS_NAME}」になります)`);
+  const trimmed = (answer ?? '').trim();
+  if (trimmed === '') {
+    return DEFAULT_CORE_CLASS_NAME;
+  }
+  if (!CORE_CLASS_NAME_PATTERN.test(trimmed)) {
+    throw new Error(
+      `disbord: Coreクラスの名前が不正です（"${trimmed}"）。クラス名として使える文字列を指定してください`,
+    );
+  }
+  return trimmed;
+}
+
+/**
+ * --core-class=Nameなら質問なしでそのまま確定、--core-class単体なら質問はスキップしつつ名前だけ聞き、
+ * 未指定ならYes/No込みで対話フローに委ねる(Yesの場合のみ続けて名前を聞く)。
+ */
+function resolveCoreClass(parsed: string | true | undefined): { enabled: boolean; name: string } {
+  if (typeof parsed === 'string') {
+    return { enabled: true, name: parsed };
+  }
+  if (parsed === true) {
+    return { enabled: true, name: promptCoreClassName() };
+  }
+  const enabled = promptYesNo('制御クラス(Core)は使用しますか？');
+  return { enabled, name: enabled ? promptCoreClassName() : DEFAULT_CORE_CLASS_NAME };
 }
 
 export async function runNewBot(args: (string | undefined)[], cwd: string): Promise<void> {
@@ -31,7 +64,7 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
   }
 
   const db = parsed.db ?? promptYesNo('DBは使用しますか？');
-  const coreClass = parsed.coreClass ?? promptYesNo('制御クラス(Core)は使用しますか？');
+  const { enabled: coreClass, name: coreClassName } = resolveCoreClass(parsed.coreClass);
 
   const write = (relativePath: string, content: string) => {
     const filePath = join(targetDir, relativePath);
@@ -50,7 +83,10 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
   write('src/components/buttons.ts', generateButtonsStub());
   write('src/components/selectMenus.ts', generateSelectMenusStub());
   write('src/components/slashCommands.ts', generateSlashCommandsStub());
-  write('src/disbord.d.ts', generateDisbordDts({ db }));
+  if (coreClass) {
+    write(`src/${coreClassName}.ts`, generateCoreStub(coreClassName));
+  }
+  write('src/disbord.d.ts', generateDisbordDts({ db, coreClass, coreClassName }));
   write('env/.env.development', generateEnvPlaceholder());
   write('env/.env.production', generateEnvPlaceholder());
 

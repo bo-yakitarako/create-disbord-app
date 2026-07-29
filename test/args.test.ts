@@ -26,6 +26,20 @@ describe('parseNewBotArgs', () => {
     });
   });
 
+  test('--core-class=Nameでクラス名まで指定できる', () => {
+    expect(parseNewBotArgs(['my-bot', '--core-class=Game'])).toEqual({
+      name: 'my-bot',
+      db: undefined,
+      coreClass: 'Game',
+    });
+  });
+
+  test('--core-class=の名前が識別子として不正な場合はthrow', () => {
+    expect(() => parseNewBotArgs(['my-bot', '--core-class=1Game'])).toThrow();
+    expect(() => parseNewBotArgs(['my-bot', '--core-class=Game Class'])).toThrow();
+    expect(() => parseNewBotArgs(['my-bot', '--core-class='])).toThrow();
+  });
+
   test('name省略時はthrow', () => {
     expect(() => parseNewBotArgs(['--db'])).toThrow();
     expect(() => parseNewBotArgs([])).toThrow();

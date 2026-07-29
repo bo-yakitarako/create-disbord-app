@@ -211,22 +211,40 @@ export default {} satisfies SlashCommandRegistration;
 `;
 }
 
+const DEFAULT_CORE_CLASS_NAME = 'Core';
+
+/**
+ * ButtonRegistration/SelectMenuRegistrationのexecute第2引数(core)は、生成後この型を
+ * ユーザーが自由に拡張していく想定のため中身は空クラスのみ(registration/Core.tsのモックアップと違い、
+ * サンプルメソッドは持たせない)。クラス名・ファイル名は`--core-class=Name`・対話フローで指定した名前になる
+ * (未指定時のデフォルトは`Core`。ファイルはクラス名と同じ`src/${className}.ts`に生成される)。
+ */
+export function generateCoreStub(className: string = DEFAULT_CORE_CLASS_NAME): string {
+  return `export class ${className} {}
+`;
+}
+
 /**
  * module augmentationの受け口。CLIが1回だけ生成し、以後さわらない想定(disbord.md「components配下」節)。
+ * coreClass有効時はRegistry['core']にsrc/{ClassName}.tsの型を流し込み、ButtonRegistration/
+ * SelectMenuRegistrationのexecute第2引数(core)にジェネリクスを書かなくても自動で反映されるようにする。
  */
-export function generateDisbordDts(options: { db: boolean }): string {
+export function generateDisbordDts(options: { db: boolean; coreClass: boolean; coreClassName?: string }): string {
+  const coreClassName = options.coreClassName ?? DEFAULT_CORE_CLASS_NAME;
+  const coreImportLine = options.coreClass ? `\nimport type { ${coreClassName} } from '@/${coreClassName}';` : '';
+  const coreField = options.coreClass ? `\n    core: InstanceType<typeof ${coreClassName}>;` : '';
   const schemaImportLine = options.db ? `\nimport type { schema } from '@/db/schema';` : '';
   const schemaField = options.db ? '\n    schema: typeof schema;' : '';
 
   return `import type buttons from '@/components/buttons';
 import type selectMenus from '@/components/selectMenus';
-import type slashCommands from '@/components/slashCommands';${schemaImportLine}
+import type slashCommands from '@/components/slashCommands';${coreImportLine}${schemaImportLine}
 
 declare module 'disbord' {
   interface Registry {
     buttons: typeof buttons;
     selectMenus: typeof selectMenus;
-    slashCommands: typeof slashCommands;${schemaField}
+    slashCommands: typeof slashCommands;${coreField}${schemaField}
   }
 }
 `;
