@@ -1,9 +1,8 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { parseNewBotArgs } from './args';
+import { promptCoreClassName, promptYesNo } from 'disbord/prompt';
 import {
   generateButtonsStub,
-  generateCoreStub,
   generateDisbordConfig,
   generateDisbordDts,
   generateEnvPlaceholder,
@@ -16,32 +15,13 @@ import {
   generateSelectMenusStub,
   generateSlashCommandsStub,
   generateTsconfig,
-} from './templates';
+} from 'disbord/scaffold';
+import { parseNewBotArgs } from './args';
 
 const DEFAULT_CORE_CLASS_NAME = 'Core';
-const CORE_CLASS_NAME_PATTERN = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
-
-function promptYesNo(question: string): boolean {
-  const answer = prompt(`${question} (y/N)`);
-  return (answer ?? '').trim().toLowerCase().startsWith('y');
-}
-
-function promptCoreClassName(): string {
-  const answer = prompt(`Coreクラスの名前を入力してください(無記入の場合は「${DEFAULT_CORE_CLASS_NAME}」になります)`);
-  const trimmed = (answer ?? '').trim();
-  if (trimmed === '') {
-    return DEFAULT_CORE_CLASS_NAME;
-  }
-  if (!CORE_CLASS_NAME_PATTERN.test(trimmed)) {
-    throw new Error(
-      `disbord: Coreクラスの名前が不正です（"${trimmed}"）。クラス名として使える文字列を指定してください`,
-    );
-  }
-  return trimmed;
-}
 
 /**
- * --core-class=Nameなら質問なしでそのまま確定、--core-class単体なら質問はスキップしつつ名前だけ聞き、
+ * `--core-class=Name`なら質問なしでそのまま確定、`--core-class`単体なら質問はスキップしつつ名前だけ聞き、
  * 未指定ならYes/No込みで対話フローに委ねる(Yesの場合のみ続けて名前を聞く)。
  */
 function resolveCoreClass(parsed: string | true | undefined): { enabled: boolean; name: string } {
@@ -49,10 +29,20 @@ function resolveCoreClass(parsed: string | true | undefined): { enabled: boolean
     return { enabled: true, name: parsed };
   }
   if (parsed === true) {
-    return { enabled: true, name: promptCoreClassName() };
+    return { enabled: true, name: promptCoreClassName(DEFAULT_CORE_CLASS_NAME) };
   }
   const enabled = promptYesNo('制御クラス(Core)は使用しますか？');
-  return { enabled, name: enabled ? promptCoreClassName() : DEFAULT_CORE_CLASS_NAME };
+  return { enabled, name: enabled ? promptCoreClassName(DEFAULT_CORE_CLASS_NAME) : DEFAULT_CORE_CLASS_NAME };
+}
+
+/**
+ * `disbord`はワークスペース内モノレポに限らず`create-disbord-app`のnpm依存としても
+ * 解決できる(package.jsonのdependenciesに昇格済み)ため、bin.tsへのパスをここで解決して
+ * 子プロセスとして`disbord enable`を実行する。
+ */
+function resolveDisbordBinPath(): string {
+  const pkgJsonPath = Bun.resolveSync('disbord/package.json', import.meta.dir);
+  return join(dirname(pkgJsonPath), 'src/cli/bin.ts');
 }
 
 export async function runNewBot(args: (string | undefined)[], cwd: string): Promise<void> {
@@ -72,8 +62,10 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
     writeFileSync(filePath, content);
   };
 
-  write('package.json', generatePackageJson(parsed.name, { db }));
-  write('disbord.config.ts', generateDisbordConfig({ db, coreClass }));
+  // `--db`/`--core-class`に依存する生成処理は一切ここでは行わない。base skeletonを
+  // 書き出した後、`disbord enable`に丸ごと委譲する(disbord.md「CLI・配布」節参照)。
+  write('package.json', generatePackageJson(parsed.name));
+  write('disbord.config.ts', generateDisbordConfig());
   write('.oxfmtrc.json', generateOxfmtrc());
   write('oxlint.config.ts', generateOxlintConfig());
   write('tsconfig.json', generateTsconfig());
@@ -83,14 +75,28 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
   write('src/components/buttons.ts', generateButtonsStub());
   write('src/components/selectMenus.ts', generateSelectMenusStub());
   write('src/components/slashCommands.ts', generateSlashCommandsStub());
-  if (coreClass) {
-    write(`src/${coreClassName}.ts`, generateCoreStub(coreClassName));
-  }
-  write('src/disbord.d.ts', generateDisbordDts({ db, coreClass, coreClassName }));
+  write('src/disbord.d.ts', generateDisbordDts({ db: false, coreClass: false }));
   write('env/.env.development', generateEnvPlaceholder());
   write('env/.env.production', generateEnvPlaceholder());
 
   console.log(`disbord: ${parsed.name} を生成しました`);
+
+  // `disbord enable`は1回の呼び出しにつきdb/core-classのどちらか一方しか有効化できないため、
+  // 両方指定された場合は2回に分けて呼び出す。
+  const enableTargets: string[][] = [];
+  if (db) enableTargets.push(['db']);
+  if (coreClass) enableTargets.push(['core-class', coreClassName]);
+
+  for (const targetArgs of enableTargets) {
+    const enable = Bun.spawn(['bun', resolveDisbordBinPath(), 'enable', ...targetArgs], {
+      cwd: targetDir,
+      stdio: ['inherit', 'inherit', 'inherit'],
+    });
+    const enableExitCode = await enable.exited;
+    if (enableExitCode !== 0) {
+      throw new Error(`disbord: ${targetArgs[0]}の有効化に失敗しました（終了コード ${enableExitCode}）`);
+    }
+  }
 
   const install = Bun.spawn(['bun', 'install'], { cwd: targetDir, stdio: ['inherit', 'inherit', 'inherit'] });
   const exitCode = await install.exited;

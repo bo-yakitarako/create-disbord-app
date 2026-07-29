@@ -14,9 +14,11 @@
     "lint": "oxlint -c oxlint.config.ts --fix && oxfmt --write src test",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "disbord": "workspace:*"
+  },
   "devDependencies": {
     "@types/bun": "latest",
-    "disbord": "workspace:*",
     "oxfmt": "^0.61.0",
     "oxlint": "latest",
     "typescript": "^7.0.2"
