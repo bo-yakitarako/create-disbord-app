@@ -76,8 +76,8 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
   write('src/components/selectMenus.ts', generateSelectMenusStub());
   write('src/components/slashCommands.ts', generateSlashCommandsStub());
   write('.disbord/disbord.d.ts', generateDisbordDts({ db: false, coreClass: false }));
-  write('env/.env.development', generateEnvPlaceholder());
-  write('env/.env.production', generateEnvPlaceholder());
+  write('env/.env.development', generateEnvPlaceholder('development'));
+  write('env/.env.production', generateEnvPlaceholder('production'));
 
   console.log(`disbord: ${parsed.name} を生成しました`);
 
