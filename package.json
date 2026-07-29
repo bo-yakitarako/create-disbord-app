@@ -1,6 +1,6 @@
 {
   "name": "create-disbord-app",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "disbordのbot雛形を生成するCLI（create-disbord-app <name>）",
   "license": "MIT",
   "author": "bo-yakitarako",
