@@ -44,14 +44,12 @@ my-bot/
 ├── src/
 │   ├── events/ready.ts         # 唯一デフォルトで生成されるイベントハンドラ
 │   ├── components/
-│   │   └── slashCommands.ts    # 空のstub（必須。buttons.ts/selectMenus.tsは任意で、使う時だけ`disbord generate component button|selectMenu`で追加）
+│   │   └── slashCommands.ts    # buttonとselectMenuにも対応しているがoptional
 │   ├── Core.ts                 # --core-class有効時のみ生成（制御クラス本体）
 │   └── db/                     # --db有効時のみ生成（モデルは disbord generate model で追加）
 └── .disbord/
     └── disbord.d.ts             # module augmentation用の生成物（git管理しない）
 ```
-
-`--db` / `--core-class`に依存する生成処理（`disbord.config.ts`への該当ブロック追加・`package.json`への追加依存やスクリプト・`src/{ClassName}.ts`・`.disbord/disbord.d.ts`の該当部分）自体は`create-disbord-app`が直接行わず、内部で`disbord enable db` / `disbord enable core-class`を呼び出すことで生成しています。同じ内容は後から個別にも実行できます（詳細は`disbord`のREADMEを参照）。
 
 ## 生成後の開発フロー
 
@@ -69,4 +67,4 @@ bun run dev
 - `bun run enable <db|core-class>` / `bun run disable <db|core-class>`: 後からDB・Coreを有効化・無効化
 - `bun run env` / `bun run encrypt` / `bun run decrypt`: `env/`配下の暗号化状態の切り替え
 
-本番運用は`bun run build`（`disbord build`）で生成した`dist/main.js`を`bun`で直接実行するだけで、`disbord start`のようなコマンドはありません。
+本番運用は`bun run build`（`disbord build`）で生成した`dist/main.js`を`bun`で直接実行するだけで、`disbord start`のようなコマンドはありません。`dist`以下には`.env`が生成されるので`bun dist/main.js`ではなく`cd dist && bun main.js`のほうがいいと思います。
