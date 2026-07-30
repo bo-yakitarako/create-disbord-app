@@ -119,5 +119,21 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
     );
   }
 
+  // oxfmtはbot自身のdevDependencyのため、bun install完了後（node_modulesに解決できる状態になってから）
+  // 最後に一括でかける。package.json/tsconfig.json等の生成物・disbord enableが追記したファイルも
+  // まとめて整形される。
+  if (exitCode === 0) {
+    const fmt = Bun.spawn(['bunx', 'oxfmt', '--write', '.'], {
+      cwd: targetDir,
+      stdio: ['inherit', 'inherit', 'inherit'],
+    });
+    const fmtExitCode = await fmt.exited;
+    if (fmtExitCode !== 0) {
+      console.error(
+        `disbord: oxfmt --write に失敗しました（終了コード ${fmtExitCode}）。${parsed.name} 配下で 'bunx oxfmt --write .' を手動実行してください`,
+      );
+    }
+  }
+
   console.log(`次のコマンドで開発を始められます:\n  cd ${parsed.name}\n  bun run dev`);
 }
