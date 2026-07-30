@@ -44,9 +44,7 @@ my-bot/
 ├── src/
 │   ├── events/ready.ts         # 唯一デフォルトで生成されるイベントハンドラ
 │   ├── components/
-│   │   ├── buttons.ts
-│   │   ├── selectMenus.ts
-│   │   └── slashCommands.ts    # いずれも空のstub
+│   │   └── slashCommands.ts    # 空のstub（必須。buttons.ts/selectMenus.tsは任意で、使う時だけ`disbord generate component button|selectMenu`で追加）
 │   ├── Core.ts                 # --core-class有効時のみ生成（制御クラス本体）
 │   └── db/                     # --db有効時のみ生成（モデルは disbord generate model で追加）
 └── .disbord/

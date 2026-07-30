@@ -2,7 +2,6 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { promptCoreClassName, promptYesNo } from 'disbord/prompt';
 import {
-  generateButtonsStub,
   generateDisbordConfig,
   generateDisbordDts,
   generateEnvPlaceholder,
@@ -14,7 +13,6 @@ import {
   generatePackageJson,
   generateReadme,
   generateReadyEvent,
-  generateSelectMenusStub,
   generateSlashCommandsStub,
   generateTsconfig,
 } from 'disbord/scaffold';
@@ -76,10 +74,11 @@ export async function runNewBot(args: (string | undefined)[], cwd: string): Prom
   write('.gitignore', generateGitignore());
   write('lefthook.yml', generateLefthookConfig());
   write('src/events/ready.ts', generateReadyEvent());
-  write('src/components/buttons.ts', generateButtonsStub());
-  write('src/components/selectMenus.ts', generateSelectMenusStub());
   write('src/components/slashCommands.ts', generateSlashCommandsStub());
-  write('.disbord/disbord.d.ts', generateDisbordDts({ db: false, coreClass: false }));
+  write(
+    '.disbord/disbord.d.ts',
+    generateDisbordDts({ db: false, coreClass: false, buttons: false, selectMenus: false }),
+  );
   write('env/.env.development', generateEnvPlaceholder('development'));
   write('env/.env.production', generateEnvPlaceholder('production'));
 
