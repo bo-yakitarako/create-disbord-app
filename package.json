@@ -1,6 +1,6 @@
 {
   "name": "create-disbord-app",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "description": "disbordのbot雛形を生成するCLI（create-disbord-app <name>）",
   "license": "MIT",
   "author": "bo-yakitarako",
@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "disbord": "^2.3.3"
+    "disbord": "^2.3.4"
   },
   "devDependencies": {
     "@types/bun": "1.3.13",
